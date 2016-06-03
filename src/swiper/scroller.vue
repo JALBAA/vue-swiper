@@ -1,12 +1,13 @@
 //scroller.vue
 <template>
     <div class='swiper-container'
-        v-on:touchmove='touchMove'
-        v-on:touchstart='touchStart'
-        v-on:touchend = 'touchEnd'
-        v-on:transitionEnd = 'transitionEnd'>
-        <div class='swiper'
-            v-bind:style= '[transform,transition,otherStyle]'>
+        @touchstart='touchStart'
+        @touchmove='touchMove'
+        @touchEnd='touchEnd'
+        @transitionEnd='transitionEnd'
+        >
+        <div class='swiper swiper-scroller'
+            v-bind:style= '[transform,transition]'>
                 <slot name='slider'>
                 </slot>
         </div>
@@ -14,22 +15,26 @@
     </div>
 </template>
 <script>
+    var free = require('./swiper.free.js')
+    var page = require('./swiper.page.js')
+    var utils = require('../utils.js')
     module.exports = {
+        mixins: [free, page],
         props: ['list','options','cubic'],
         data: function(){
             return {
                 //原始列表
                 originList: [],
                 //touch开始的位置
-                startPos: 0,
+                startPosX: 0,
                 //touch结束的位置
-                endPos: 0,
+                endPosX: 0,
                 //上一帧的位置
-                lastPos: 0,
+                lastPosX: 0,
                 //当前帧的位置
-                curPos: 0,
+                curPosX: 0,
                 //每帧的变动
-                delta: 0,
+                deltaX: 0,
                 //上一帧的位置
                 lastPosY: 0,
                 //当前帧的位置
@@ -49,12 +54,12 @@
                 //窗口的宽
                 firstFrame: true,
                 scroll: false,
-                //style
-                otherStyle:{
-                    'left': '0',
-                    'height': 'auto',
-                    'width': 'auto'
-                }
+                disableScreenScroll: false,
+                frameCnt: 0,
+                mode: 'page',
+                lastDeltaList: [],
+                maxTranslateX: 0,
+                wrapperWidth: 0
             }
         },
         computed: {
@@ -87,44 +92,66 @@
             listWidth: function(){
                 return this.wrapperWidth/this.options.perSliders * this.originList.length || 0;
             },
-            wrapperWidth: function(){
-                return this.options.wrapperWidth;
-            },
             scrollEvent: function(){
                 var event = document.createEvent('HTMLEvents');
                 event.initEvent('scroll')
                 event.eventType = 'message'
                 return event;
-            }
+            },
         },
         created: function(){
+            if(this.options.perSliders == 0){
+                this.mode = 'free'
+            }
             //init
             var _this = this;
+            window.addEventListener('scroll',function(e){
+                if(_this.disableScreenScroll)
+                    e.preventDefault();
+            })
+            document.addEventListener('touchmove',function(e){
+                if(_this.disableScreenScroll)
+                    e.preventDefault();
+            })
             //clone list
             //init options
-            this.options = this.options || {
+            var defaultOptions = {
                 loop: false,
+                direction: 'horizontal',
                 perSliders: 1,
                 perGroup: 1,
                 autoPlay: false,
                 pagination: true,
                 'height': 'auto'
-
             };
-            if(!!this.options.height){
-                this.otherStyle.height = this.options.height;
+            this.options = this.options || defaultOptions
+            //mixin
+            for(var key in defaultOptions){
+                if(!this.options[key]){
+                    this.options[key] = defaultOptions[key]
+                }
             }
             //如果是循环，则首尾重复
             if(!!this.options.loop){
-                this.list.forEach(function(item,idx){
-                    if(idx != 0 && idx != _this.list.length-1)
-                        _this.originList.push(item);
+                this.originList = this.list.map(function(item,idx){
+                    return item
                 });
+                var redundant = this.originList.length % this.options.perSliders
+                for(var i=0; i<redundant; i++){
+                    this.originList.push(new Object())
+                    this.list.push(new Object())
+                }
+                this.loopList()
+                this.length = this.pageCount
             }else{
-				this.originList = this.list;
+				this.originList = this.list
+                this.options.perSliders > 0 ? this.originList.length/this.options.perSliders : 1
 			}
-            this.length = this.originList.length;
-            //this.otherStyle.width = (this.wrapperWidth/this.options.perSliders*this.list.length)+'px'
+            this.$emit('created')
+        },
+        compiled: function(){
+            var _this = this;
+
             //是否自动播放
             if(!!this.options.autoPlay)
                 this.autoPlay();
@@ -142,17 +169,8 @@
             this.$watch('animating',function(val){
                 if(val)
                     window.requestAnimationFrame(_renderFrame)
-
             })
-            window.addEventListener('resize',function(){
-                //_this.wrapperWidth = _this.$el.offsetWidth
-                //_this.$broadcast('resize',_this.wrapperWidth,_this.pageCount)
-                //_this.easing = false
-                //_this.scrollTo(_this.idx)
-            });
-        },
-        compiled: function(){
-            var _this = this;
+
             this.$el.addEventListener('webkitTransitionEnd',function(){
                 _this.transitionEnd();
             })
@@ -162,127 +180,140 @@
         },
         ready: function(){
             //初始化swiper长度
-            //this.wrapperWidth = this.$el.offsetWidth;
+            this.wrapperWidth = this.options.wrapperWidth || this.$el.offsetWidth;
             this.$broadcast('resize',this.wrapperWidth,this.pageCount,this.options.height)
-        },
-        events: {
-            scrollTo: function(idx){
-                if(idx != this.idx)
-                    this.scrollTo(idx)
-            }
+            window.addEventListener('resize',utils.proxy(function(){
+                this.$broadcast('resize',this.wrapperWidth,this.pageCount,this.options.height)
+            },this))
+            this.$emit('ready')
         },
         methods: {
-            autoPlay: function(time){
-                var _this = this;
-                var frame = 0;
-                function renderFrame() {
-                    if(_this.easing){
-                        frame++
-                        if(frame == 60 * 5){
-                            frame = 0;
-                            _this.next();
-                        }
-                    }
-                    requestAnimationFrame(renderFrame)
-                }
-                requestAnimationFrame(renderFrame)
-            },
-            prev: function(){
-                if(!!this.options.loop)
-                    this.idx = (this.idx == -1) ? this.length-1 : this.idx-1;
-                else
-                    this.idx = (this.idx == 0) ? this.idx : this.idx-1;
-                this.scrollTo(this.idx);
-            },
-            next: function(){
-                if(!!this.options.loop)
-                   this.idx = (this.idx == this.length) ? 0 : this.idx+1;
-                else
-                   this.idx = (this.idx == this.pageCount-1) ? this.idx : this.idx+1;
-                this.scrollTo(this.idx);
-            },
-            scrollTo: function(idx){
-                this.animating = true;
-                this.idx = idx;
-                var nextPos = -this.wrapperWidth/this.options.perSliders*Math.floor(this.options.perSliders)*idx;
-                if(!this.options.loop && this.idx == this.pageCount-1 && this.pageCount>1){
-                    this.translateX = -this.listWidth+this.wrapperWidth
-                }else
-                   this.translateX = nextPos;
-                this.$dispatch('scrollTo',idx);
-            },
             touchStart: function(e){
-                this.delta = 0;
+                //reset status
+                if(this.animating){
+                    this.transitionEnd()
+                }
+                this.firstFrame = true;
+                this.animating = false;
+                this.deltaX = 0;
+                this.easing = false
 
-                this.curPos = e.touches[0].pageX;
-                this.lastPos = this.curPos;
-                this.startPos = this.curPos;
+                //set init value
+                this.curPosX = e.touches[0].pageX;
+                this.lastPosX = this.curPosX;
+                this.startPosX = this.curPosX;
 
                 this.curPosY = e.touches[0].pageY;
                 this.lastPosY = this.curPosY;
 
-                this.firstFrame = true;
-                if(this.options.loop && this.animating)return;
-                this.animating = false;
-                if(this.idx == this.length){
-                    this.idx = 0;
-                    //this.scrollTo(this.idx);
-                }else if(this.idx == -1){
-                    this.idx = this.length-1;
-                    this.scrollTo(this.idx);
+                if(this.mode == 'page'){
+                    if(this.idx == this.length){
+                        this.idx = 0;
+                        this.scrollTo(this.idx);
+                    }else if(this.idx == -1){
+                        this.idx = this.length-1;
+                        this.scrollTo(this.idx);
+                    }
                 }
             },
             touchMove: function(e){
-                if(this.options.loop && this.animating)return;
                 if(this.list.length==1)return;
+
+                //not animating yet
                 this.animating = false;
                 this.easing = false;
-                this.curPos = e.touches[0].pageX;
-                this.delta =  this.curPos - this.lastPos;
-                this.lastPos = this.curPos;
 
+                //get deltaX
+                this.curPosX = e.touches[0].pageX;
+                this.deltaX =  this.curPosX - this.lastPosX;
+                this.lastPosX = this.curPosX;
+
+                //get deltaY
                 this.curPosY = e.touches[0].pageY;
                 this.deltaY =  this.curPosY - this.lastPosY;
                 this.lastPosY = this.curPosY;
+
+                //juedge user's manipulation
+                //vertical or horizontal
                 if(this.firstFrame){
-                    if(Math.abs(this.deltaY)*2.5 < Math.abs(this.delta)){
-                        this.scroll = true;
+                    if(!this.deltaX || !this.deltaY){
                         e.preventDefault();
+                    }
+                    //用一个对角线做判断
+                    if(Math.abs(this.deltaX)*0.5 > Math.abs(this.deltaY)){
+                        e.preventDefault();
+                        this.scroll = true;
+                        this.disableScreenScroll = true;
                     }else{
                         this.scroll = false;
+                        this.disableScreenScroll = false;
                     }
                 }
+                //scroll if possible
                 if(this.scroll){
                     if(this.translateX>0){
-                        this.translateX += this.delta/2;
-                    }else if(this.translateX < -this.wrapperWidth/this.options.perSliders*Math.floor(this.options.perSliders)*(this.pageCount-1) ){
-                        this.translateX += this.delta/2;
+                        this.translateX += this.deltaX/2;
+                    }else if(this.translateX < -(this.listWidth - this.wrapperWidth) ){
+                        this.translateX += this.deltaX/2;
                     }else{
-                        this.translateX += this.delta;
+                        this.translateX += this.deltaX;
                     }
-                    this.endPos = this.curPos;
+                    this.endPosX = this.curPosX;
                 }
+                //now it's not the firstFrame
                 this.firstFrame = false;
+
+
+                if(this.mode == 'free'){
+                    //累计缓动数据
+                    if(this.lastDeltaList.length==5)
+                        this.lastDeltaList.shift()
+                    this.lastDeltaList.push(this.deltaX)
+
+                }
             },
             touchEnd: function(e){
-                if(this.options.loop && this.animating)return;
+                this.disableScreenScroll = false;
                 this.easing = true;
-                if(!this.scroll)return;
-                if(Math.abs(this.delta) == 0){
-                    this.scrollTo(this.idx)
-                    return
-                }
-                var delta = this.endPos - this.startPos;
-                if(delta<-.1*this.wrapperWidth)
-                    this.next();
-                else if(delta>.1*this.wrapperWidth)
-                    this.prev();
-                else{
-                    this.scrollTo(this.idx)
+                if(this.mode == 'free'){
+                    var sum = 0
+                    this.lastDeltaList.forEach(function(delta){
+                        sum += delta
+                    })
+                    //计算最后5帧平均值
+                    var average = sum / this.lastDeltaList.length
+                    //惯性滑动
+                    if(average)
+                        this.translateX += average * 5
+                    if(this.translateX > 0)
+                        this.translateX = 0
+                    if(this.translateX < -1*this.maxTranslateX)
+                        this.translateX = -1*this.maxTranslateX
+                    this.lastDeltaList = []
+                }else if(this.mode == 'page'){
+
+                    if(!this.scroll)return;
+                    if(this.mode == 'free')return;
+                    if(Math.abs(this.deltaX) == 0){
+                        this.scrollTo(this.idx)
+                        return
+                    }
+                    //judge the idx to go
+                    var deltaX = this.endPosX - this.startPosX;
+                    if(deltaX <-.1*this.wrapperWidth){
+                        this.next();
+                    }
+                    else if(deltaX >.1*this.wrapperWidth){
+                        this.prev();
+                    }
+                    else{
+                        this.scrollTo(this.idx)
+                    }
                 }
             },
             transitionEnd: function(){
-                //window.dispatchEvent(this.scrollEvent)
+                if(this.mode == 'free')return
+                this.frameCnt = 0
                 if(this.idx == this.length){
                     this.easing = false;
                     this.idx = 0;
@@ -309,23 +340,15 @@
     }
 </script>
 <style lang='less'>
-    @import '../../core/less/var.less';
-    @import '../../core/less/layout.less';
     .swiper-container {
         overflow: hidden;
         position: relative;
-        background-color: @white;
+        width: 100%;
+        height: 100%;
         .swiper {
             display: -webkit-box;
             display: -moz-box;
             position: relative;
-            li {
-                position: relative;
-                height: 100%;
-                div {
-                    width: 100%;
-                }
-            }
         }
     }
 </style>

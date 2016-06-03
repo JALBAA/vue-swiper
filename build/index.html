@@ -3,21 +3,55 @@
     <head>
         <meta charset="utf-8">
         <title>vue swiper</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <style media="screen">
+            .swiper-container img{
+                width: 100%;
+            }
+        </style>
     </head>
     <body>
-        <div class="wrapper">
+        <div id="wrapper">
 
         </div>
-        <script type="text/javascript" src="vue-swiper.js"></script>
-        <script id="tmpl" type="text/tmpl">
-            <swiper>
-            </swiper>
+        <script type="text/javascript" src="../node_modules/vue/dist/vue.js"></script>
+        <script type="text/javascript" src="./vue-swiper.js">
+        </script>
+        <script type="text/vue-tmpl" id="tmpl">
+        <swiper v-bind:options="options" :list="list">
+            <slider v-for="item in list" :options="options" slot="slider">
+                <a :href="item.href">
+                    <img :src="item.imgSrc">
+                </a>
+            </slider>
+        </swiper>
         </script>
         <script type="text/javascript">
-            new Swiper({
-                el: '.wrapper',
-                template: document.getElementById('tmpl').innerHTML,
-
+            new Vue({
+                el: "#wrapper",
+                replace: false,
+                template: document.querySelector('#tmpl').innerHTML,
+                components: {
+                    'swiper': Swiper.swiper,
+                    'slider': Swiper.slider
+                },
+                data: {
+                    list: [{
+                        imgSrc: 'http://img8.gomein.net.cn/image/prodimg/promimg/topics/201605/20160531/574619彩电228.jpg'
+                    },
+                    {
+                        imgSrc: 'http://img12.gomein.net.cn/image/prodimg/promimg/topics/201606/20160602/574619W4最品牌大入口模板640-226.jpg'
+                    },
+                    {
+                        imgSrc: 'http://img10.gomein.net.cn/image/prodimg/promimg/topics/201606/20160601/574619创维品牌日入口（640x228）.jpg'
+                    }],
+                    options: {
+                        'autoPlay': false,
+                        'loop': false,
+                        'perSliders': 1,
+                        'pagination': false,
+                    }
+                }
             })
         </script>
     </body>
