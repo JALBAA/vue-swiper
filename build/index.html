@@ -4,8 +4,9 @@
         <meta charset="utf-8">
         <title>vue swiper</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <link rel="stylesheet" href="http://cdn.ccwebsite.com/reset-css/1.2.2/mobile/reset.min.css" media="screen" title="no title" charset="utf-8">
         <style media="screen">
-            .swiper-container img{
+            .swiper img{
                 width: 100%;
             }
         </style>
@@ -14,26 +15,65 @@
         <div id="wrapper">
 
         </div>
-        <script type="text/javascript" src="../node_modules/vue/dist/vue.js"></script>
-        <script type="text/javascript" src="./vue-swiper.js">
-        </script>
+        <div id="wrapper2">
+
+        </div>
         <script type="text/vue-tmpl" id="tmpl">
         <swiper v-bind:options="options" :list="list">
-            <slider v-for="item in list" :options="options" slot="slider">
+            <slider v-for="item in list" track-by="$index" :options="options" slot="slider">
                 <a :href="item.href">
-                    <img :src="item.imgSrc">
+                    <img v-lazyload="item.imgSrc" :src="'http://img3.gomein.net.cn/image/prodimg/promimg/topics/201606/20160603/515790yeshi63750.jpg'">
                 </a>
             </slider>
+            <pagination slot="pagination"></pagination>
         </swiper>
         </script>
+        <script type="text/javascript" src="../node_modules/vue/dist/vue.js"></script>
+        <script type="text/javascript" src="./vue-swiper.js"></script>
+        <script type="text/javascript" src="../node_modules/vue-lazyload-img/dist/vue.lazyimg.js"></script>
         <script type="text/javascript">
+            Vue.use(Vue.lazyimg,{
+               fadein: true,
+            })
             new Vue({
                 el: "#wrapper",
                 replace: false,
                 template: document.querySelector('#tmpl').innerHTML,
                 components: {
-                    'swiper': Swiper.swiper,
-                    'slider': Swiper.slider
+                    'swiper': Swiper.carousel,
+                    'slider': Swiper.slider,
+                    'pagination': Swiper.pagination
+                },
+                data: {
+                    list: [{
+                        imgSrc: 'http://img8.gomein.net.cn/image/prodimg/promimg/topics/201605/20160531/574619彩电228.jpg'
+                    },
+                    {
+                        imgSrc: 'http://img12.gomein.net.cn/image/prodimg/promimg/topics/201606/20160602/574619W4最品牌大入口模板640-226.jpg'
+                    },
+                    {
+                        imgSrc: 'http://img10.gomein.net.cn/image/prodimg/promimg/topics/201606/20160601/574619创维品牌日入口（640x228）.jpg'
+                    },
+                    {
+                        imgSrc: 'http://img6.gomein.net.cn/image/prodimg/promimg/topics/201606/20160622/515790meizu622750.jpg'
+                    }],
+                    options: {
+                        'autoPlay': true,
+                        'loop': false,
+                        'perSliders': 2,
+                        'pagination': true,
+                    }
+                }
+            })
+
+            new Vue({
+                el: "#wrapper2",
+                replace: false,
+                template: document.querySelector('#tmpl').innerHTML,
+                components: {
+                    'swiper': Swiper.scroller,
+                    'slider': Swiper.slider,
+                    'pagination': Swiper.pagination
                 },
                 data: {
                     list: [{
@@ -45,14 +85,9 @@
                     {
                         imgSrc: 'http://img10.gomein.net.cn/image/prodimg/promimg/topics/201606/20160601/574619创维品牌日入口（640x228）.jpg'
                     }],
-                    options: {
-                        'autoPlay': false,
-                        'loop': false,
-                        'perSliders': 1,
-                        'pagination': false,
-                    }
                 }
             })
+
         </script>
     </body>
 </html>

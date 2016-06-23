@@ -11,45 +11,32 @@
             return {
                 pos: 0,
                 otherStyle: {
-                    'height': 'auto',
                     'width': '1px',
                     'left': '0',
-                    'position': 'relative'
                 }
             }
         },
-       /* computed: {
-            transform: function(){
-                return {
-                    'transform': 'translate3d('+this.pos+'px, 0,0)',
-                    '-webkit-transform': 'translate3d('+this.pos+'px,0,0)',
-                    '-moz-transform': 'translate3d('+this.pos+'px,0,0)',
-                }
-            }
-        },*/
         created: function(){
             //init options
-            this.options = this.options || {
+            var defaultOptions = {
                 loop: false,
+                direction: 'horizontal',
                 perSliders: 1,
                 perGroup: 1,
                 autoPlay: false,
-                pagination: true
-            };
-            if(this.options.height)
-                this.otherStyle.height = this.options.height;
-            this.otherStyle.width = this.options.wrapperWidth/this.options.perSliders+'px';
-            if(!!this.options.loop)
-                this.otherStyle.left = -this.options.wrapperWidth+'px';
-        },
-        methods: {
-            /*onClick: function(idx){
-                this.$dispach('clickOne',idx)
-            }*/
+                pagination: true,
+                'height': 'auto'
+            }
+            this.options = this.options || defaultOptions
+            //mixin
+            for(var key in defaultOptions){
+                if(!this.options[key]){
+                    this.options[key] = defaultOptions[key]
+                }
+            }
         },
         events: {
             resize: function(width){
-                this.otherStyle.height = this.height;
                 this.otherStyle.width = width/this.options.perSliders+'px';
                 if(!!this.options.loop)
                     this.otherStyle.left = -width+'px';

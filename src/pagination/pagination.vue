@@ -55,77 +55,30 @@
     }
 </script>
 <style lang='less'>
-    /*@import '../../core/less/var.less';
-    @import '../../core/less/layout.less';
+    @point-size: 10px;
     .swiper-container {
         .pagination {
             display: block;
             width: 100%;
             position: absolute;
-            z-index: 11;
+            z-index: 999;
             bottom: 0;
-            height: .25rem;
+            height: @point-size * 1.5;
             font-size: 0;
             text-align: center;
-                li {
-                    font-size: .12rem;
-                    line-height: .3rem;
-                    display: inline-block;
-                    margin: 0 .06rem;
-                    width: .11rem;
-                    height: .11rem;
-                    border-radius: 50%;
-                    background-color: rgba(255,255,255,.6);
-                    &.active {
-                        background-color: #fff;
-                    }
-                }
-            &.cubic {
-                li {
-                    font-size: .12rem;
-                    line-height: .3rem;
-                    display: inline-block;
-                    margin: 0 .05rem;
-                    border-radius: 0;
-                    height: .06rem;
-                    width: .3rem;
-                    background-color: @gray;
-                    opacity: .8;
-                    &.active {
-                        background-color: @red;
-                    }
-                }
-                &.white {
-                    li{
-                        background-color: @white;
-                        opacity: .3;
-                        &.active {
-                            opacity: 1;
-                        }
-                    }
-                }
-            }
-            &.red {
-                li {
-                    background-color: @gray-lighter;
-                    &.active {
-                        background-color: @red;
-                    }
-                }
-            }
-            &.block {
-                position: relative;
-                padding-top: .1rem;
-                box-sizing: content-box;
-                background-color: @white;
-                li {
-                    background-color: @gray-lighter;
-                    &.active {
-                        background-color: @red;
-                    }
+            li {
+                font-size: @point-size;
+                line-height: @point-size * 1.5;
+                display: inline-block;
+                margin: 0 (@point-size / 2);
+                width: @point-size;
+                height: @point-size;
+                border-radius: 50%;
+                background-color: rgba(255,255,255,.6);
+                &.active {
+                    background-color: #fff;
                 }
             }
         }
     }
-*/
 </style>

@@ -1,5 +1,14 @@
-var Swiper =
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else if(typeof exports === 'object')
+		exports["Swiper"] = factory();
+	else
+		root["Swiper"] = factory();
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 
@@ -47,12 +56,33 @@ var Swiper =
 
 	'use strict';
 
-	var Vue = __webpack_require__(1);
-	var swiper = __webpack_require__(3);
-	var slider = __webpack_require__(10);
+	var _vue = __webpack_require__(1);
+
+	var _vue2 = _interopRequireDefault(_vue);
+
+	var _swiper = __webpack_require__(3);
+
+	var _swiper2 = _interopRequireDefault(_swiper);
+
+	var _slider = __webpack_require__(13);
+
+	var _slider2 = _interopRequireDefault(_slider);
+
+	var _scroller = __webpack_require__(18);
+
+	var _scroller2 = _interopRequireDefault(_scroller);
+
+	var _pagination = __webpack_require__(20);
+
+	var _pagination2 = _interopRequireDefault(_pagination);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	module.exports = {
-	    'swiper': swiper,
-	    'slider': slider
+	    carousel: _swiper2.default,
+	    slider: _slider2.default,
+	    scroller: _scroller2.default,
+	    pagination: _pagination2.default
 	};
 
 /***/ },
@@ -2923,13 +2953,11 @@ var Swiper =
 /***/ function(module, exports, __webpack_require__) {
 
 	var __vue_script__, __vue_template__
-	__webpack_require__(4)
-	__vue_script__ = __webpack_require__(8)
+	__vue_script__ = __webpack_require__(4)
 	if (__vue_script__ &&
 	    __vue_script__.__esModule &&
 	    Object.keys(__vue_script__).length > 1) {
 	  console.warn("[vue-loader] src/swiper/swiper.vue: named exports in *.vue files are ignored.")}
-	__vue_template__ = __webpack_require__(9)
 	module.exports = __vue_script__ || {}
 	if (module.exports.__esModule) module.exports = module.exports.default
 	if (__vue_template__) {
@@ -2951,20 +2979,269 @@ var Swiper =
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
+	'use strict';
+
+	var _utils = __webpack_require__(5);
+
+	var _utils2 = _interopRequireDefault(_utils);
+
+	var _swiperBase = __webpack_require__(6);
+
+	var _swiperBase2 = _interopRequireDefault(_swiperBase);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	module.exports = {
+	    mixins: [_swiperBase2.default],
+	    props: ['list', 'options', 'cubic'],
+	    data: function data() {
+	        return {
+	            originList: [],
+
+	            idx: 0,
+
+	            length: 0,
+
+	            translateX: 0,
+	            frameCnt: 0,
+	            wrapperWidth: 0
+	        };
+	    },
+	    computed: {
+	        pageCount: function pageCount() {
+	            var pageCount = this.originList.length / parseInt(this.options.perSliders);
+	            return Math.ceil(pageCount);
+	        },
+	        transform: function transform() {
+	            return {
+	                'transform': 'translate3d(' + this.translateX + 'px, 0,0)',
+	                '-webkit-transform': 'translate3d(' + this.translateX + 'px,0,0)',
+	                '-moz-transform': 'translate3d(' + this.translateX + 'px,0,0)'
+	            };
+	        },
+	        transition: function transition() {
+	            if (this.easing) {
+	                return {
+	                    'transition': 'transform .3s ',
+	                    '-webkit-transition': '-webkit-transform .3s',
+	                    '-moz-transition': '-moz-transform .3s'
+	                };
+	            } else {
+	                return {
+	                    'transition': 'transform 0s',
+	                    '-webkit-transition': '-webkit-transform 0s',
+	                    '-moz-transition': '-moz-transform 0s'
+	                };
+	            }
+	        },
+	        listWidth: function listWidth() {
+	            return this.wrapperWidth / this.options.perSliders * this.originList.length || 0;
+	        }
+	    },
+	    created: function created() {
+	        this.baseInit();
+
+	        if (!!this.options.loop) {
+	            this.originList = this.list.map(function (item, idx) {
+	                return item;
+	            });
+	            var redundant = this.originList.length % this.options.perSliders;
+	            for (var i = 0; i < redundant; i++) {
+	                this.originList.push(new Object());
+	                this.list.push(new Object());
+	            }
+	            this.loopList();
+	            this.length = this.pageCount;
+	        } else {
+	            this.originList = this.list;
+	            this.options.perSliders > 0 ? this.originList.length / this.options.perSliders : 1;
+	        }
+	    },
+	    compiled: function compiled() {
+	        if (!!this.options.autoPlay) this.autoPlay();
+
+	        this.$watch('idx', _utils2.default.proxy(function (idx) {
+	            this.$dispatch('idxChange', idx);
+	            this.$broadcast('idxChange', idx);
+	        }, this));
+
+	        this.baseCompiled();
+	    },
+	    ready: function ready() {
+	        this.baseReady();
+	    },
+	    events: {
+	        scrollTo: function scrollTo(idx) {
+	            if (idx != this.idx) this.scrollTo(idx);
+	        },
+	        touchStart: function touchStart(e) {
+	            if (this.idx == this.length) {
+	                this.idx = 0;
+	                this.scrollTo(this.idx);
+	            } else if (this.idx == -1) {
+	                this.idx = this.length - 1;
+	                this.scrollTo(this.idx);
+	            }
+	        },
+	        touchEnd: function touchEnd(e) {
+	            if (!this.isCanScroll) return;
+	            if (Math.abs(this.deltaX) == 0) {
+	                this.scrollTo(this.idx);
+	                return;
+	            }
+
+	            var deltaX = this.endPosX - this.startPosX;
+	            if (deltaX < -.1 * this.wrapperWidth) {
+	                this.next();
+	            } else if (deltaX > .1 * this.wrapperWidth) {
+	                this.prev();
+	            } else {
+	                this.scrollTo(this.idx);
+	            }
+	        },
+	        transitionEnd: function transitionEnd() {
+	            this.frameCnt = 0;
+	            if (this.idx == this.length) {
+	                this.easing = false;
+	                this.idx = 0;
+	                this.scrollTo(this.idx);
+	                var _this = this;
+	                setTimeout(function () {
+	                    _this.easing = true;
+	                    _this.animating = false;
+	                }, 50);
+	            } else if (this.idx == -1) {
+	                this.easing = false;
+	                this.idx = this.length - 1;
+	                this.scrollTo(this.idx);
+	                var _this = this;
+	                setTimeout(function () {
+	                    _this.easing = true;
+	                    _this.animating = false;
+	                }, 50);
+	            } else {
+	                this.animating = false;
+	            }
+	        }
+	    },
+	    methods: {
+	        loopList: function loopList() {
+	            var length = this.options.perSliders;
+	            for (var i = 0; i < length; i++) {
+	                this.list.push(this.originList[i]);
+	            }
+	            for (var i = this.originList.length - 1; i >= this.originList.length - length; i--) {
+	                this.list.unshift(this.originList[i]);
+	            }
+	        },
+	        autoPlay: function autoPlay(time) {
+	            var _this = this;
+	            this.frameCnt = 0;
+	            function renderFrame() {
+	                if (_this.easing) {
+	                    _this.frameCnt++;
+	                    if (_this.frameCnt == 60 * 5) {
+	                        _this.frameCnt = 0;
+	                        _this.next();
+	                    }
+	                }
+	                requestAnimationFrame(renderFrame);
+	            }
+	            requestAnimationFrame(renderFrame);
+	        },
+	        computeTransLimit: function computeTransLimit() {
+	            var children = this.$el.querySelector('.swiper').children;
+	            this.maxTranslateX = 0;
+	            for (var i = 0; i < children.length; i++) {
+	                this.maxTranslateX += children[i].offsetWidth;
+	            }
+	            this.maxTranslateX -= this.wrapperWidth;
+	        },
+	        prev: function prev() {
+	            if (!!this.options.loop) this.idx = this.idx == -1 ? this.length - 1 : this.idx - 1;else this.idx = this.idx == 0 ? this.idx : this.idx - 1;
+	            this.scrollTo(this.idx);
+	        },
+	        next: function next() {
+	            if (!!this.options.loop) this.idx = this.idx == this.length ? 0 : this.idx + 1;else this.idx = this.idx == this.pageCount - 1 ? this.idx : this.idx + 1;
+	            this.scrollTo(this.idx);
+	        },
+	        scrollTo: function scrollTo(idx) {
+	            var self = this;
+	            this.animating = true;
+	            this.idx = idx;
+	            var initPos = this.translateX;
+	            var targetPos = -this.wrapperWidth / this.options.perSliders * Math.floor(this.options.perSliders) * idx;
+	            var deltaX = Math.floor(targetPos - initPos);
+	            if (!self.options.loop && self.idx == self.pageCount - 1 && self.pageCount > 1) {
+	                self.translateX = -self.listWidth + self.wrapperWidth;
+	            } else self.translateX += deltaX;
+	            if (Math.abs(self.translateX - targetPos) > 6) requestAnimationFrame(renderFrame);else self.translateX = targetPos;
+	            this.$dispatch('scrollTo', idx);
+	        }
+	    }
+	};
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	module.exports = {
+	    proxy: function proxy(cb, scope) {
+	        return function () {
+	            cb.apply(scope, arguments);
+	        };
+	    }
+	};
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __vue_script__, __vue_template__
+	__webpack_require__(7)
+	__vue_script__ = __webpack_require__(11)
+	if (__vue_script__ &&
+	    __vue_script__.__esModule &&
+	    Object.keys(__vue_script__).length > 1) {
+	  console.warn("[vue-loader] src/swiper/swiper.base.vue: named exports in *.vue files are ignored.")}
+	__vue_template__ = __webpack_require__(12)
+	module.exports = __vue_script__ || {}
+	if (module.exports.__esModule) module.exports = module.exports.default
+	if (__vue_template__) {
+	(typeof module.exports === "function" ? (module.exports.options || (module.exports.options = {})) : module.exports).template = __vue_template__
+	}
+	if (false) {(function () {  module.hot.accept()
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), true)
+	  if (!hotAPI.compatible) return
+	  var id = "/home/zhaoye/workspace/self/github/vue-swiper/src/swiper/swiper.base.vue"
+	  if (!module.hot.data) {
+	    hotAPI.createRecord(id, module.exports)
+	  } else {
+	    hotAPI.update(id, module.exports, __vue_template__)
+	  }
+	})()}
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(5);
+	var content = __webpack_require__(8);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(7)(content, {});
+	var update = __webpack_require__(10)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
 		if(!content.locals) {
-			module.hot.accept("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./swiper.vue", function() {
-				var newContent = require("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./swiper.vue");
+			module.hot.accept("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./swiper.base.vue", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./swiper.base.vue");
 				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 				update(newContent);
 			});
@@ -2974,21 +3251,21 @@ var Swiper =
 	}
 
 /***/ },
-/* 5 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(6)();
+	exports = module.exports = __webpack_require__(9)();
 	// imports
 
 
 	// module
-	exports.push([module.id, ".swiper-container {\n  overflow: hidden;\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n.swiper-container .swiper {\n  display: -webkit-box;\n  display: -moz-box;\n  position: relative;\n}\n", ""]);
+	exports.push([module.id, ".swiper-container {\n  overflow: hidden;\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n.swiper-container .swiper {\n  display: -webkit-box;\n  display: -ms-flexbox;\n  display: flex;\n  position: relative;\n}\n.swiper-container .swiper .slider {\n  -ms-flex-negative: 0;\n      flex-shrink: 0;\n  position: relative;\n}\n", ""]);
 
 	// exports
 
 
 /***/ },
-/* 6 */
+/* 9 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -3043,7 +3320,7 @@ var Swiper =
 	};
 
 /***/ },
-/* 7 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -3265,7 +3542,7 @@ var Swiper =
 
 
 /***/ },
-/* 8 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3274,27 +3551,15 @@ var Swiper =
 	    value: true
 	});
 
-	var _swiperFree = __webpack_require__(15);
-
-	var _swiperFree2 = _interopRequireDefault(_swiperFree);
-
-	var _swiperPage = __webpack_require__(16);
-
-	var _swiperPage2 = _interopRequireDefault(_swiperPage);
-
-	var _utils = __webpack_require__(17);
+	var _utils = __webpack_require__(5);
 
 	var _utils2 = _interopRequireDefault(_utils);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	exports.default = {
-	    mixins: [_swiperFree2.default, _swiperPage2.default],
-	    props: ['list', 'options', 'cubic'],
 	    data: function data() {
 	        return {
-	            originList: [],
-
 	            startPosX: 0,
 
 	            endPosX: 0,
@@ -3315,27 +3580,329 @@ var Swiper =
 
 	            animating: false,
 
-	            idx: 0,
-
-	            length: 0,
-
 	            translateX: 0,
 
 	            firstFrame: true,
-	            scroll: false,
+
+	            isCanScroll: false,
+
 	            disableScreenScroll: false,
+	            wrapperWidth: 0,
+	            scrollEvent: function () {
+	                var event = document.createEvent('HTMLEvents');
+	                event.initEvent('scroll');
+	                event.eventType = 'message';
+	                return event;
+	            }()
+	        };
+	    },
+	    methods: {
+	        baseInit: function baseInit() {
+	            this.disableScreenScrollOnManipulating();
+
+	            var defaultOptions = {
+	                loop: false,
+	                direction: 'horizontal',
+	                perSliders: 1,
+	                perGroup: 1,
+	                autoPlay: false,
+	                pagination: true,
+	                'height': 'auto'
+	            };
+	            this.options = this.options || defaultOptions;
+
+	            for (var key in defaultOptions) {
+	                if (!this.options[key]) {
+	                    this.options[key] = defaultOptions[key];
+	                }
+	            }
+	        },
+	        baseCompiled: function baseCompiled() {
+	            var _this = this;
+	            var _renderFrame = function _renderFrame() {
+	                window.dispatchEvent(_this.scrollEvent);
+	                if (this.animating) window.requestAnimationFrame(_renderFrame);
+	            };
+	            this.$watch('animating', function (animating) {
+	                if (!!this.animating) window.requestAnimationFrame(_renderFrame);
+	            });
+	            this.$el.addEventListener('webkitTransitionEnd', _utils2.default.proxy(function () {
+	                this.transitionEnd();
+	            }, this));
+	            this.$el.addEventListener('mozTransitionEnd', _utils2.default.proxy(function () {
+	                this.transitionEnd();
+	            }, this));
+	        },
+	        baseReady: function baseReady() {
+	            this.wrapperWidth = this.options.wrapperWidth || this.$el.offsetWidth;
+	            this.$broadcast('resize', this.wrapperWidth, this.pageCount, this.options.height);
+	            window.addEventListener('resize', _utils2.default.proxy(function () {
+	                this.$broadcast('resize', this.wrapperWidth, this.pageCount, this.options.height);
+	            }, this));
+	        },
+	        disableScreenScrollOnManipulating: function disableScreenScrollOnManipulating() {
+	            window.addEventListener('scroll', _utils2.default.proxy(function (e) {
+	                if (this.disableScreenScroll) e.preventDefault();
+	            }, this));
+	            document.addEventListener('touchmove', function (e) {
+	                if (this.disableScreenScroll) e.preventDefault();
+	            });
+	        },
+	        touchStart: function touchStart(e) {
+	            if (this.animating) {
+	                this.transitionEnd();
+	            }
+	            this.firstFrame = true;
+	            this.animating = false;
+	            this.deltaX = 0;
+	            this.easing = false;
+
+	            this.curPosX = e.touches[0].pageX;
+	            this.lastPosX = this.curPosX;
+	            this.startPosX = this.curPosX;
+
+	            this.curPosY = e.touches[0].pageY;
+	            this.lastPosY = this.curPosY;
+	            this.$emit('touchStart', e);
+	        },
+	        touchEnd: function touchEnd(e) {
+	            this.disableScreenScroll = false;
+	            this.easing = true;
+
+	            this.$emit('touchEnd', e);
+	        },
+	        touchMove: function touchMove(e) {
+	            if (this.list.length <= 1) return;
+
+	            this.animating = false;
+	            this.easing = false;
+
+	            this.curPosX = e.touches[0].pageX;
+	            this.deltaX = this.curPosX - this.lastPosX;
+	            this.lastPosX = this.curPosX;
+
+	            this.curPosY = e.touches[0].pageY;
+	            this.deltaY = this.curPosY - this.lastPosY;
+	            this.lastPosY = this.curPosY;
+
+	            if (this.firstFrame) {
+	                if (!this.deltaX || !this.deltaY) {
+	                    e.preventDefault();
+	                }
+
+	                if (Math.abs(this.deltaX) * 0.5 > Math.abs(this.deltaY)) {
+	                    e.preventDefault();
+	                    this.isCanScroll = true;
+	                    this.disableScreenScroll = true;
+	                } else {
+	                    this.isCanScroll = false;
+	                    this.disableScreenScroll = false;
+	                }
+	            }
+
+	            if (this.isCanScroll) {
+	                if (this.translateX > 0) {
+	                    this.translateX += this.deltaX / 2;
+	                } else if (this.translateX < -(this.listWidth - this.wrapperWidth)) {
+	                    this.translateX += this.deltaX / 2;
+	                } else {
+	                    this.translateX += this.deltaX;
+	                }
+	                this.endPosX = this.curPosX;
+	            }
+
+	            this.firstFrame = false;
+
+	            this.$emit('touchMove', e);
+	        },
+	        transitionEnd: function transitionEnd(e) {
+	            this.$emit('transitionEnd', e);
+	        }
+	    }
+	};
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	module.exports = "\n<div class='swiper-container'\n    @touchstart='touchStart'\n    @touchmove='touchMove'\n    @touchEnd='touchEnd'\n    @transitionEnd='transitionEnd'\n    >\n    <div class='swiper'\n        v-bind:style= '[transform,transition]'>\n            <slot name='slider'>\n            </slot>\n    </div>\n    <slot name=\"pagination\"></slot>\n</div>\n";
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __vue_script__, __vue_template__
+	__webpack_require__(14)
+	__vue_script__ = __webpack_require__(16)
+	if (__vue_script__ &&
+	    __vue_script__.__esModule &&
+	    Object.keys(__vue_script__).length > 1) {
+	  console.warn("[vue-loader] src/swiper/slider.vue: named exports in *.vue files are ignored.")}
+	__vue_template__ = __webpack_require__(17)
+	module.exports = __vue_script__ || {}
+	if (module.exports.__esModule) module.exports = module.exports.default
+	if (__vue_template__) {
+	(typeof module.exports === "function" ? (module.exports.options || (module.exports.options = {})) : module.exports).template = __vue_template__
+	}
+	if (false) {(function () {  module.hot.accept()
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), true)
+	  if (!hotAPI.compatible) return
+	  var id = "/home/zhaoye/workspace/self/github/vue-swiper/src/swiper/slider.vue"
+	  if (!module.hot.data) {
+	    hotAPI.createRecord(id, module.exports)
+	  } else {
+	    hotAPI.update(id, module.exports, __vue_template__)
+	  }
+	})()}
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(15);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(10)(content, {});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./slider.vue", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./slider.vue");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(9)();
+	// imports
+
+
+	// module
+	exports.push([module.id, "", ""]);
+
+	// exports
+
+
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	module.exports = {
+	    props: ['index', 'content', 'options', 'height'],
+	    data: function data() {
+	        return {
+	            pos: 0,
+	            otherStyle: {
+	                'width': '1px',
+	                'left': '0'
+	            }
+	        };
+	    },
+	    created: function created() {
+	        var defaultOptions = {
+	            loop: false,
+	            direction: 'horizontal',
+	            perSliders: 1,
+	            perGroup: 1,
+	            autoPlay: false,
+	            pagination: true,
+	            'height': 'auto'
+	        };
+	        this.options = this.options || defaultOptions;
+
+	        for (var key in defaultOptions) {
+	            if (!this.options[key]) {
+	                this.options[key] = defaultOptions[key];
+	            }
+	        }
+	    },
+	    events: {
+	        resize: function resize(width) {
+	            this.otherStyle.width = width / this.options.perSliders + 'px';
+	            if (!!this.options.loop) this.otherStyle.left = -width + 'px';
+	        }
+	    }
+	};
+
+/***/ },
+/* 17 */
+/***/ function(module, exports) {
+
+	module.exports = "\n<div class='slider' v-bind:style='[otherStyle]'>\n    <slot></slot>\n</div>\n";
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __vue_script__, __vue_template__
+	__vue_script__ = __webpack_require__(19)
+	if (__vue_script__ &&
+	    __vue_script__.__esModule &&
+	    Object.keys(__vue_script__).length > 1) {
+	  console.warn("[vue-loader] src/swiper/scroller.vue: named exports in *.vue files are ignored.")}
+	module.exports = __vue_script__ || {}
+	if (module.exports.__esModule) module.exports = module.exports.default
+	if (__vue_template__) {
+	(typeof module.exports === "function" ? (module.exports.options || (module.exports.options = {})) : module.exports).template = __vue_template__
+	}
+	if (false) {(function () {  module.hot.accept()
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), true)
+	  if (!hotAPI.compatible) return
+	  var id = "/home/zhaoye/workspace/self/github/vue-swiper/src/swiper/scroller.vue"
+	  if (!module.hot.data) {
+	    hotAPI.createRecord(id, module.exports)
+	  } else {
+	    hotAPI.update(id, module.exports, __vue_template__)
+	  }
+	})()}
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _utils = __webpack_require__(5);
+
+	var _utils2 = _interopRequireDefault(_utils);
+
+	var _swiperBase = __webpack_require__(6);
+
+	var _swiperBase2 = _interopRequireDefault(_swiperBase);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = {
+	    mixins: [_swiperBase2.default],
+	    props: ['list', 'options', 'cubic'],
+	    data: function data() {
+	        return {
 	            frameCnt: 0,
-	            mode: 'page',
 	            lastDeltaList: [],
-	            maxTranslateX: 0,
-	            wrapperWidth: 0
+	            listWidth: 0
 	        };
 	    },
 	    computed: {
-	        pageCount: function pageCount() {
-	            var pageCount = this.originList.length / parseInt(this.options.perSliders);
-	            return Math.ceil(pageCount);
-	        },
 	        transform: function transform() {
 	            return {
 	                'transform': 'translate3d(' + this.translateX + 'px, 0,0)',
@@ -3357,250 +3924,69 @@ var Swiper =
 	                    '-moz-transition': '-moz-transform 0s'
 	                };
 	            }
-	        },
-	        listWidth: function listWidth() {
-	            return this.wrapperWidth / this.options.perSliders * this.originList.length || 0;
-	        },
-	        scrollEvent: function scrollEvent() {
-	            var event = document.createEvent('HTMLEvents');
-	            event.initEvent('scroll');
-	            event.eventType = 'message';
-	            return event;
 	        }
 	    },
 	    created: function created() {
-	        if (this.options.perSliders == 0) {
-	            this.mode = 'free';
-	        }
-
-	        var _this = this;
-	        window.addEventListener('scroll', function (e) {
-	            if (_this.disableScreenScroll) e.preventDefault();
-	        });
-	        document.addEventListener('touchmove', function (e) {
-	            if (_this.disableScreenScroll) e.preventDefault();
-	        });
-
-	        var defaultOptions = {
-	            loop: false,
-	            direction: 'horizontal',
-	            perSliders: 1,
-	            perGroup: 1,
-	            autoPlay: false,
-	            pagination: true,
-	            'height': 'auto'
-	        };
-	        this.options = this.options || defaultOptions;
-
-	        for (var key in defaultOptions) {
-	            if (!this.options[key]) {
-	                this.options[key] = defaultOptions[key];
-	            }
-	        }
-
-	        if (!!this.options.loop) {
-	            this.originList = this.list.map(function (item, idx) {
-	                return item;
-	            });
-	            var redundant = this.originList.length % this.options.perSliders;
-	            for (var i = 0; i < redundant; i++) {
-	                this.originList.push(new Object());
-	                this.list.push(new Object());
-	            }
-	            this.loopList();
-	            this.length = this.pageCount;
-	        } else {
-	            this.originList = this.list;
-	            this.options.perSliders > 0 ? this.originList.length / this.options.perSliders : 1;
-	        }
-	        this.$emit('created');
+	        this.baseInit();
 	    },
 	    compiled: function compiled() {
-	        var _this = this;
-
-	        if (!!this.options.autoPlay) this.autoPlay();
-
-	        this.$watch('idx', function (idx) {
-	            _this.$dispatch('idxChange', idx);
-	            _this.$broadcast('idxChange', idx);
-	        });
-	        var _renderFrame = function _renderFrame() {
-	            window.dispatchEvent(_this.scrollEvent);
-	            if (_this.animating) window.requestAnimationFrame(_renderFrame);
-	        };
-	        this.$watch('animating', function (val) {
-	            if (val) window.requestAnimationFrame(_renderFrame);
-	        });
-
-	        this.$el.addEventListener('webkitTransitionEnd', function () {
-	            _this.transitionEnd();
-	        });
-	        this.$el.addEventListener('mozTransitionEnd', function () {
-	            _this.transitionEnd();
-	        });
+	        this.baseCompiled();
 	    },
 	    ready: function ready() {
-	        this.wrapperWidth = this.options.wrapperWidth || this.$el.offsetWidth;
-	        this.$broadcast('resize', this.wrapperWidth, this.pageCount, this.options.height);
-	        window.addEventListener('resize', _utils2.default.proxy(function () {
-	            this.$broadcast('resize', this.wrapperWidth, this.pageCount, this.options.height);
-	        }, this));
-	        this.$emit('ready');
+	        this.baseReady();
 	    },
 	    methods: {
+	        computeTransLimit: function computeTransLimit() {
+	            var children = this.$el.querySelector('.swiper').children;
+	            this.listWidth = 0;
+	            for (var i = 0; i < children.length; i++) {
+	                this.listWidth += children[i].offsetWidth;
+	            }
+	            this.listWidth -= this.wrapperWidth;
+	        }
+	    },
+	    events: {
 	        touchStart: function touchStart(e) {
-	            if (this.animating) {
-	                this.transitionEnd();
-	            }
-	            this.firstFrame = true;
-	            this.animating = false;
-	            this.deltaX = 0;
-	            this.easing = false;
-
-	            this.curPosX = e.touches[0].pageX;
-	            this.lastPosX = this.curPosX;
-	            this.startPosX = this.curPosX;
-
-	            this.curPosY = e.touches[0].pageY;
-	            this.lastPosY = this.curPosY;
-
-	            if (this.mode == 'page') {
-	                if (this.idx == this.length) {
-	                    this.idx = 0;
-	                    this.scrollTo(this.idx);
-	                } else if (this.idx == -1) {
-	                    this.idx = this.length - 1;
-	                    this.scrollTo(this.idx);
-	                }
-	            }
+	            this.computeTransLimit();
 	        },
 	        touchMove: function touchMove(e) {
-	            if (this.list.length == 1) return;
+	            this.animating = true;
 
-	            this.animating = false;
-	            this.easing = false;
-
-	            this.curPosX = e.touches[0].pageX;
-	            this.deltaX = this.curPosX - this.lastPosX;
-	            this.lastPosX = this.curPosX;
-
-	            this.curPosY = e.touches[0].pageY;
-	            this.deltaY = this.curPosY - this.lastPosY;
-	            this.lastPosY = this.curPosY;
-
-	            if (this.firstFrame) {
-	                if (!this.deltaX || !this.deltaY) {
-	                    e.preventDefault();
-	                }
-
-	                if (Math.abs(this.deltaX) * 0.5 > Math.abs(this.deltaY)) {
-	                    e.preventDefault();
-	                    this.scroll = true;
-	                    this.disableScreenScroll = true;
-	                } else {
-	                    this.scroll = false;
-	                    this.disableScreenScroll = false;
-	                }
-	            }
-
-	            if (this.scroll) {
-	                if (this.translateX > 0) {
-	                    this.translateX += this.deltaX / 2;
-	                } else if (this.translateX < -(this.listWidth - this.wrapperWidth)) {
-	                    this.translateX += this.deltaX / 2;
-	                } else {
-	                    this.translateX += this.deltaX;
-	                }
-	                this.endPosX = this.curPosX;
-	            }
-
-	            this.firstFrame = false;
-
-	            if (this.mode == 'free') {
-	                if (this.lastDeltaList.length == 5) this.lastDeltaList.shift();
-	                this.lastDeltaList.push(this.deltaX);
-	            }
+	            if (this.lastDeltaList.length == 5) this.lastDeltaList.shift();
+	            this.lastDeltaList.push(this.deltaX);
 	        },
 	        touchEnd: function touchEnd(e) {
-	            this.disableScreenScroll = false;
-	            this.easing = true;
-	            if (this.mode == 'free') {
-	                var sum = 0;
-	                this.lastDeltaList.forEach(function (delta) {
-	                    sum += delta;
-	                });
+	            var sum = 0;
+	            this.lastDeltaList.forEach(function (delta) {
+	                sum += delta;
+	            });
 
-	                var average = sum / this.lastDeltaList.length;
+	            var average = sum / this.lastDeltaList.length;
 
-	                if (average) this.translateX += average * 5;
-	                if (this.translateX > 0) this.translateX = 0;
-	                if (this.translateX < -1 * this.maxTranslateX) this.translateX = -1 * this.maxTranslateX;
-	                this.lastDeltaList = [];
-	            } else if (this.mode == 'page') {
-
-	                if (!this.scroll) return;
-	                if (this.mode == 'free') return;
-	                if (Math.abs(this.deltaX) == 0) {
-	                    this.scrollTo(this.idx);
-	                    return;
-	                }
-
-	                var deltaX = this.endPosX - this.startPosX;
-	                if (deltaX < -.1 * this.wrapperWidth) {
-	                    this.next();
-	                } else if (deltaX > .1 * this.wrapperWidth) {
-	                    this.prev();
-	                } else {
-	                    this.scrollTo(this.idx);
-	                }
-	            }
+	            if (average) this.translateX += average * 5;
+	            if (this.translateX > 0) this.translateX = 0;
+	            if (this.translateX < -1 * this.listWidth) this.translateX = -1 * this.listWidth;
+	            this.lastDeltaList = [];
+	            this.animating = true;
 	        },
 	        transitionEnd: function transitionEnd() {
-	            if (this.mode == 'free') return;
-	            this.frameCnt = 0;
-	            if (this.idx == this.length) {
-	                this.easing = false;
-	                this.idx = 0;
-	                this.scrollTo(this.idx);
-	                var _this = this;
-	                setTimeout(function () {
-	                    _this.easing = true;
-	                    _this.animating = false;
-	                }, 50);
-	            } else if (this.idx == -1) {
-	                this.easing = false;
-	                this.idx = this.length - 1;
-	                this.scrollTo(this.idx);
-	                var _this = this;
-	                setTimeout(function () {
-	                    _this.easing = true;
-	                    _this.animating = false;
-	                }, 50);
-	            } else {
-	                this.animating = false;
-	            }
+	            window.dispatchEvent(this.scrollEvent);
 	        }
 	    }
 	};
 
 /***/ },
-/* 9 */
-/***/ function(module, exports) {
-
-	module.exports = "\n<div class='swiper-container'\n    @touchstart='touchStart'\n    @touchmove='touchMove'\n    @touchEnd='touchEnd'\n    @transitionEnd='transitionEnd'\n    >\n    <div class='swiper'\n        v-bind:style= '[transform,transition]'>\n            <slot name='slider'>\n            </slot>\n    </div>\n    <slot></slot>\n</div>\n";
-
-/***/ },
-/* 10 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __vue_script__, __vue_template__
-	__webpack_require__(11)
-	__vue_script__ = __webpack_require__(13)
+	__webpack_require__(21)
+	__vue_script__ = __webpack_require__(23)
 	if (__vue_script__ &&
 	    __vue_script__.__esModule &&
 	    Object.keys(__vue_script__).length > 1) {
-	  console.warn("[vue-loader] src/swiper/slider.vue: named exports in *.vue files are ignored.")}
-	__vue_template__ = __webpack_require__(14)
+	  console.warn("[vue-loader] src/pagination/pagination.vue: named exports in *.vue files are ignored.")}
+	__vue_template__ = __webpack_require__(27)
 	module.exports = __vue_script__ || {}
 	if (module.exports.__esModule) module.exports = module.exports.default
 	if (__vue_template__) {
@@ -3610,7 +3996,7 @@ var Swiper =
 	  var hotAPI = require("vue-hot-reload-api")
 	  hotAPI.install(require("vue"), true)
 	  if (!hotAPI.compatible) return
-	  var id = "/home/zhaoye/workspace/self/github/vue-swiper/src/swiper/slider.vue"
+	  var id = "/home/zhaoye/workspace/self/github/vue-swiper/src/pagination/pagination.vue"
 	  if (!module.hot.data) {
 	    hotAPI.createRecord(id, module.exports)
 	  } else {
@@ -3619,23 +4005,23 @@ var Swiper =
 	})()}
 
 /***/ },
-/* 11 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(12);
+	var content = __webpack_require__(22);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(7)(content, {});
+	var update = __webpack_require__(10)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
 		if(!content.locals) {
-			module.hot.accept("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./slider.vue", function() {
-				var newContent = require("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./slider.vue");
+			module.hot.accept("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./pagination.vue", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js!./../../node_modules/vue-loader/lib/style-rewriter.js!./../../node_modules/less-loader/index.js!./../../node_modules/vue-loader/lib/selector.js?type=style&index=0!./pagination.vue");
 				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 				update(newContent);
 			});
@@ -3645,171 +4031,140 @@ var Swiper =
 	}
 
 /***/ },
-/* 12 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(6)();
+	exports = module.exports = __webpack_require__(9)();
 	// imports
 
 
 	// module
-	exports.push([module.id, "", ""]);
+	exports.push([module.id, ".swiper-container .pagination {\n  display: block;\n  width: 100%;\n  position: absolute;\n  z-index: 999;\n  bottom: 0;\n  height: 15px;\n  font-size: 0;\n  text-align: center;\n}\n.swiper-container .pagination li {\n  font-size: 10px;\n  line-height: 15px;\n  display: inline-block;\n  margin: 0 5px;\n  width: 10px;\n  height: 10px;\n  border-radius: 50%;\n  background-color: rgba(255, 255, 255, 0.6);\n}\n.swiper-container .pagination li.active {\n  background-color: #fff;\n}\n", ""]);
 
 	// exports
 
 
 /***/ },
-/* 13 */
-/***/ function(module, exports) {
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
+	var _page = __webpack_require__(24);
+
+	var _page2 = _interopRequireDefault(_page);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	module.exports = {
-	    props: ['index', 'content', 'options', 'height'],
+	    props: [],
 	    data: function data() {
 	        return {
-	            pos: 0,
-	            otherStyle: {
-	                'height': 'auto',
-	                'width': '1px',
-	                'left': '0',
-	                'position': 'relative'
-	            }
+	            pageCount: 0,
+	            rem: 0
 	        };
 	    },
-
+	    components: {
+	        page: _page2.default
+	    },
+	    computed: {
+	        circle: function circle() {
+	            if (this.$el.className.match(/cubic/)) {
+	                return {};
+	            }
+	            return {
+	                'width': parseInt(.11 * this.rem) + 'px',
+	                'height': parseInt(.11 * this.rem) + 'px'
+	            };
+	        }
+	    },
 	    created: function created() {
-	        this.options = this.options || {
-	            loop: false,
-	            perSliders: 1,
-	            perGroup: 1,
-	            autoPlay: false,
-	            pagination: true
-	        };
-	        if (this.options.height) this.otherStyle.height = this.options.height;
-	        this.otherStyle.width = this.options.wrapperWidth / this.options.perSliders + 'px';
-	        if (!!this.options.loop) this.otherStyle.left = -this.options.wrapperWidth + 'px';
+	        this.rem = parseInt(document.querySelector('html').style.fontSize);
+	        if (this.index == 0) {
+	            this.isActive = true;
+	        }
 	    },
-	    methods: {},
 	    events: {
-	        resize: function resize(width) {
-	            this.otherStyle.height = this.height;
-	            this.otherStyle.width = width / this.options.perSliders + 'px';
-	            if (!!this.options.loop) this.otherStyle.left = -width + 'px';
+	        resize: function resize(width, pageCount) {
+	            this.rem = parseInt(document.querySelector('html').style.fontSize);
+	            this.pageCount = pageCount;
+	        },
+	        idxChange: function idxChange(idx) {
+	            var _idx = idx;
+	            if (idx == this.pageCount) _idx = 0;else if (idx == -1) _idx = this.pageCount - 1;
+	            this.$broadcast('idxChange', _idx);
 	        }
 	    }
 	};
 
 /***/ },
-/* 14 */
-/***/ function(module, exports) {
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
 
-	module.exports = "\n<div class='slider' v-bind:style='[otherStyle]'>\n    <slot></slot>\n</div>\n";
+	var __vue_script__, __vue_template__
+	__vue_script__ = __webpack_require__(25)
+	if (__vue_script__ &&
+	    __vue_script__.__esModule &&
+	    Object.keys(__vue_script__).length > 1) {
+	  console.warn("[vue-loader] src/pagination/page.vue: named exports in *.vue files are ignored.")}
+	__vue_template__ = __webpack_require__(26)
+	module.exports = __vue_script__ || {}
+	if (module.exports.__esModule) module.exports = module.exports.default
+	if (__vue_template__) {
+	(typeof module.exports === "function" ? (module.exports.options || (module.exports.options = {})) : module.exports).template = __vue_template__
+	}
+	if (false) {(function () {  module.hot.accept()
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), true)
+	  if (!hotAPI.compatible) return
+	  var id = "/home/zhaoye/workspace/self/github/vue-swiper/src/pagination/page.vue"
+	  if (!module.hot.data) {
+	    hotAPI.createRecord(id, module.exports)
+	  } else {
+	    hotAPI.update(id, module.exports, __vue_template__)
+	  }
+	})()}
 
 /***/ },
-/* 15 */
+/* 25 */
 /***/ function(module, exports) {
 
 	'use strict';
 
 	module.exports = {
-	    methods: {
-	        computeTransLimit: function computeTransLimit() {
-	            var children = this.$el.querySelector('.swiper').children;
-	            this.maxTranslateX = 0;
-	            for (var i = 0; i < children.length; i++) {
-	                this.maxTranslateX += children[i].offsetWidth;
-	            }
-	            this.maxTranslateX -= this.wrapperWidth;
+	    props: ['index', 'isActive'],
+	    data: function data() {
+	        return {};
+	    },
+	    created: function created() {
+	        if (this.index == 0) {
+	            this.isActive = true;
 	        }
 	    },
 	    events: {
-	        ready: function ready() {
-	            this.computeTransLimit();
+	        idxChange: function idxChange(idx) {
+	            if (this.index == idx) {
+	                this.isActive = true;
+	            } else {
+	                this.isActive = false;
+	            }
 	        }
 	    }
 	};
 
 /***/ },
-/* 16 */
+/* 26 */
 /***/ function(module, exports) {
 
-	'use strict';
-
-	module.exports = {
-	    methods: {
-	        autoPlay: function autoPlay(time) {
-	            var _this = this;
-	            this.frameCnt = 0;
-	            function renderFrame() {
-	                if (_this.easing) {
-	                    _this.frameCnt++;
-	                    if (_this.frameCnt == 60 * 5) {
-	                        _this.frameCnt = 0;
-	                        _this.next();
-	                    }
-	                }
-	                requestAnimationFrame(renderFrame);
-	            }
-	            requestAnimationFrame(renderFrame);
-	        },
-	        loopList: function loopList() {
-	            var length = this.options.perSliders;
-	            for (var i = 0; i < length; i++) {
-	                this.list.push(this.originList[i]);
-	            }
-	            for (var i = this.originList.length - 1; i >= this.originList.length - length; i--) {
-	                this.list.unshift(this.originList[i]);
-	            }
-	        },
-	        prev: function prev() {
-	            if (!!this.options.loop) this.idx = this.idx == -1 ? this.length - 1 : this.idx - 1;else this.idx = this.idx == 0 ? this.idx : this.idx - 1;
-	            this.scrollTo(this.idx);
-	        },
-	        next: function next() {
-	            if (!!this.options.loop) this.idx = this.idx == this.length ? 0 : this.idx + 1;else this.idx = this.idx == this.pageCount - 1 ? this.idx : this.idx + 1;
-	            this.scrollTo(this.idx);
-	        },
-	        scrollTo: function scrollTo(idx) {
-	            //for security
-	            this.idx = idx;
-
-	            this.animating = true;
-
-	            //compute translateX
-	            var initPos = this.translateX;
-	            var targetPos = -this.wrapperWidth / this.options.perSliders * Math.floor(this.options.perSliders) * idx;
-	            var deltaX = Math.floor(targetPos - initPos);
-
-	            if (!this.options.loop && this.idx == this.pageCount - 1 && this.pageCount > 1) {
-	                this.translateX = -this.listWidth + this.wrapperWidth;
-	            } else this.translateX += deltaX;
-
-	            if (Math.abs(this.translateX - targetPos) > 6) requestAnimationFrame(renderFrame);else this.translateX = targetPos;
-
-	            this.$dispatch('scrollTo', idx);
-	        }
-	    },
-	    events: {
-	        scrollTo: function scrollTo(idx) {
-	            if (idx != this.idx) this.scrollTo(idx);
-	        }
-	    }
-	};
+	module.exports = "\n<li v-bind:class='{active: isActive}'></li>\n";
 
 /***/ },
-/* 17 */
+/* 27 */
 /***/ function(module, exports) {
 
-	"use strict";
-
-	module.exports = {
-	    proxy: function proxy(cb, scope) {
-	        return function () {
-	            cb.apply(scope, arguments);
-	        };
-	    }
-	};
+	module.exports = "\n<ul class='pagination'>\n    <page\n    v-for='item in pageCount'\n    track-by=\"$index\"\n    v-bind:index='$index'\n    v-bind:style='[circle]'></page>\n</ul>\n";
 
 /***/ }
-/******/ ]);
+/******/ ])
+});
+;
