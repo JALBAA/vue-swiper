@@ -179,13 +179,17 @@ export default ({
                 }
                 this.endPosX = this.curPosX;
             }
+            this.$emit('touchMove',e)
             //now it's not the firstFrame
             this.firstFrame = false;
-
-            this.$emit('touchMove',e)
         },
         transitionEnd: function(e){
             this.$emit('transitionEnd',e)
+            //TODO optimize in future
+            var event = document.createEvent('HTMLEvents');
+            event.initEvent('scrollEnd')
+            event.eventType = 'message'
+            window.dispatchEvent(event)
         }
     },
 })

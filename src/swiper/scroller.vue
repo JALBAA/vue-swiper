@@ -3,12 +3,13 @@
     import base from './swiper.base.vue'
     export default ({
         mixins: [base],
-        props: ['list','options','cubic'],
+        props: ['list','options'],
         data: function(){
             return {
                 frameCnt: 0,
                 lastDeltaList: [],
                 listWidth: 0,
+                scrolling: false,
             }
         },
         computed: {
@@ -22,9 +23,9 @@
             transition: function(){
                 if(this.easing){
                     return {
-                        'transition': 'transform .3s ',
-                        '-webkit-transition': '-webkit-transform .3s',
-                        '-moz-transition': '-moz-transform .3s'
+                        'transition': 'transform .5s ',
+                        '-webkit-transition': '-webkit-transform .5s',
+                        '-moz-transition': '-moz-transform .5s'
                     }
                 }else{
                     return {
@@ -59,7 +60,6 @@
                 this.computeTransLimit()
             },
             touchMove: function(e){
-                this.animating = true
                 //累计缓动数据
                 if(this.lastDeltaList.length==5)
                     this.lastDeltaList.shift()
@@ -73,17 +73,15 @@
                 //计算最后5帧平均值
                 var average = sum / this.lastDeltaList.length
                 //惯性滑动
-                if(average)
-                    this.translateX += average * 5
+                if(average && Math.abs(average)>5)
+                    this.translateX += average * 20
                 if(this.translateX > 0)
                     this.translateX = 0
                 if(this.translateX < -1*this.listWidth)
                     this.translateX = -1*this.listWidth
                 this.lastDeltaList = []
-                this.animating = true
             },
             transitionEnd: function(){
-                window.dispatchEvent(this.scrollEvent)
             }
         }
     })

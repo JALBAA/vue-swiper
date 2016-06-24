@@ -24,10 +24,18 @@
                 return Math.ceil(pageCount);
             },
             transform: function(){
-                return {
-                    'transform': 'translate3d('+this.translateX+'px, 0,0)',
-                    '-webkit-transform': 'translate3d('+this.translateX+'px,0,0)',
-                    '-moz-transform': 'translate3d('+this.translateX+'px,0,0)',
+                if(window.navigator.userAgent.match(/UCBrowser/)){
+                    return {
+                        'transform': 'translate('+this.translateX+'px,0)',
+                        '-webkit-transform': 'translate('+this.translateX+'px,0)',
+                        '-moz-transform': 'translate('+this.translateX+'px,0)',
+                    }
+                }else{
+                    return {
+                        'transform': 'translate3d('+this.translateX+'px, 0,0)',
+                        '-webkit-transform': 'translate3d('+this.translateX+'px,0,0)',
+                        '-moz-transform': 'translate3d('+this.translateX+'px,0,0)',
+                    }
                 }
             },
             transition: function(){
@@ -89,15 +97,6 @@
                 if(idx != this.idx)
                     this.scrollTo(idx)
             },
-            touchStart: function(e){
-                if(this.idx == this.length){
-                    this.idx = 0;
-                    this.scrollTo(this.idx);
-                }else if(this.idx == -1){
-                    this.idx = this.length-1;
-                    this.scrollTo(this.idx);
-                }
-            },
             touchEnd: function(e){
                 if(!this.isCanScroll)return;
                 if(Math.abs(this.deltaX) == 0){
@@ -157,7 +156,7 @@
                 function renderFrame() {
                     if(_this.easing){
                         _this.frameCnt++
-                        if(_this.frameCnt == 60 * 5){
+                        if(_this.frameCnt == 60 * 1){
                             _this.frameCnt = 0;
                             _this.next();
                         }

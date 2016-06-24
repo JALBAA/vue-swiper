@@ -3013,11 +3013,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return Math.ceil(pageCount);
 	        },
 	        transform: function transform() {
-	            return {
-	                'transform': 'translate3d(' + this.translateX + 'px, 0,0)',
-	                '-webkit-transform': 'translate3d(' + this.translateX + 'px,0,0)',
-	                '-moz-transform': 'translate3d(' + this.translateX + 'px,0,0)'
-	            };
+	            if (window.navigator.userAgent.match(/UCBrowser/)) {
+	                return {
+	                    'transform': 'translate(' + this.translateX + 'px,0)',
+	                    '-webkit-transform': 'translate(' + this.translateX + 'px,0)',
+	                    '-moz-transform': 'translate(' + this.translateX + 'px,0)'
+	                };
+	            } else {
+	                return {
+	                    'transform': 'translate3d(' + this.translateX + 'px, 0,0)',
+	                    '-webkit-transform': 'translate3d(' + this.translateX + 'px,0,0)',
+	                    '-moz-transform': 'translate3d(' + this.translateX + 'px,0,0)'
+	                };
+	            }
 	        },
 	        transition: function transition() {
 	            if (this.easing) {
@@ -3073,15 +3081,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    events: {
 	        scrollTo: function scrollTo(idx) {
 	            if (idx != this.idx) this.scrollTo(idx);
-	        },
-	        touchStart: function touchStart(e) {
-	            if (this.idx == this.length) {
-	                this.idx = 0;
-	                this.scrollTo(this.idx);
-	            } else if (this.idx == -1) {
-	                this.idx = this.length - 1;
-	                this.scrollTo(this.idx);
-	            }
 	        },
 	        touchEnd: function touchEnd(e) {
 	            if (!this.isCanScroll) return;
@@ -3140,7 +3139,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            function renderFrame() {
 	                if (_this.easing) {
 	                    _this.frameCnt++;
-	                    if (_this.frameCnt == 60 * 5) {
+	                    if (_this.frameCnt == 60 * 1) {
 	                        _this.frameCnt = 0;
 	                        _this.next();
 	                    }
@@ -3710,13 +3709,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	                this.endPosX = this.curPosX;
 	            }
+	            this.$emit('touchMove', e);
 
 	            this.firstFrame = false;
-
-	            this.$emit('touchMove', e);
 	        },
 	        transitionEnd: function transitionEnd(e) {
 	            this.$emit('transitionEnd', e);
+
+	            var event = document.createEvent('HTMLEvents');
+	            event.initEvent('scrollEnd');
+	            event.eventType = 'message';
+	            window.dispatchEvent(event);
 	        }
 	    }
 	};
@@ -3894,12 +3897,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	exports.default = {
 	    mixins: [_swiperBase2.default],
-	    props: ['list', 'options', 'cubic'],
+	    props: ['list', 'options'],
 	    data: function data() {
 	        return {
 	            frameCnt: 0,
 	            lastDeltaList: [],
-	            listWidth: 0
+	            listWidth: 0,
+	            scrolling: false
 	        };
 	    },
 	    computed: {
@@ -3913,9 +3917,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        transition: function transition() {
 	            if (this.easing) {
 	                return {
-	                    'transition': 'transform .3s ',
-	                    '-webkit-transition': '-webkit-transform .3s',
-	                    '-moz-transition': '-moz-transform .3s'
+	                    'transition': 'transform .5s ',
+	                    '-webkit-transition': '-webkit-transform .5s',
+	                    '-moz-transition': '-moz-transform .5s'
 	                };
 	            } else {
 	                return {
@@ -3950,8 +3954,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.computeTransLimit();
 	        },
 	        touchMove: function touchMove(e) {
-	            this.animating = true;
-
 	            if (this.lastDeltaList.length == 5) this.lastDeltaList.shift();
 	            this.lastDeltaList.push(this.deltaX);
 	        },
@@ -3963,15 +3965,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            var average = sum / this.lastDeltaList.length;
 
-	            if (average) this.translateX += average * 5;
+	            if (average && Math.abs(average) > 5) this.translateX += average * 20;
 	            if (this.translateX > 0) this.translateX = 0;
 	            if (this.translateX < -1 * this.listWidth) this.translateX = -1 * this.listWidth;
 	            this.lastDeltaList = [];
-	            this.animating = true;
 	        },
-	        transitionEnd: function transitionEnd() {
-	            window.dispatchEvent(this.scrollEvent);
-	        }
+	        transitionEnd: function transitionEnd() {}
 	    }
 	};
 

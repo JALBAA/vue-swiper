@@ -22,7 +22,7 @@
         <swiper v-bind:options="options" :list="list">
             <slider v-for="item in list" track-by="$index" :options="options" slot="slider">
                 <a :href="item.href">
-                    <img v-lazyload="item.imgSrc" :src="'http://img3.gomein.net.cn/image/prodimg/promimg/topics/201606/20160603/515790yeshi63750.jpg'">
+                    <img v-lazyload="item.imgSrc" :src="'http://geekie.online/static/image/vue-swiper-demo/default.jpg'" >
                 </a>
             </slider>
             <pagination slot="pagination"></pagination>
@@ -32,9 +32,7 @@
         <script type="text/javascript" src="./vue-swiper.js"></script>
         <script type="text/javascript" src="../node_modules/vue-lazyload-img/dist/vue.lazyimg.js"></script>
         <script type="text/javascript">
-            Vue.use(Vue.lazyimg,{
-               fadein: true,
-            })
+            Vue.use(Vue.lazyimg)
             new Vue({
                 el: "#wrapper",
                 replace: false,
@@ -46,21 +44,33 @@
                 },
                 data: {
                     list: [{
-                        imgSrc: 'http://img8.gomein.net.cn/image/prodimg/promimg/topics/201605/20160531/574619彩电228.jpg'
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/1.jpg'
                     },
                     {
-                        imgSrc: 'http://img12.gomein.net.cn/image/prodimg/promimg/topics/201606/20160602/574619W4最品牌大入口模板640-226.jpg'
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/2.jpg'
                     },
                     {
-                        imgSrc: 'http://img10.gomein.net.cn/image/prodimg/promimg/topics/201606/20160601/574619创维品牌日入口（640x228）.jpg'
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/3.jpg'
                     },
                     {
-                        imgSrc: 'http://img6.gomein.net.cn/image/prodimg/promimg/topics/201606/20160622/515790meizu622750.jpg'
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/4.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/5.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/6.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/7.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/8.jpg'
                     }],
                     options: {
-                        'autoPlay': true,
-                        'loop': false,
-                        'perSliders': 2,
+                        'autoPlay': false,
+                        'loop': true,
+                        'perSliders': 1,
                         'pagination': true,
                     }
                 }
@@ -77,13 +87,28 @@
                 },
                 data: {
                     list: [{
-                        imgSrc: 'http://img8.gomein.net.cn/image/prodimg/promimg/topics/201605/20160531/574619彩电228.jpg'
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/1.jpg'
                     },
                     {
-                        imgSrc: 'http://img12.gomein.net.cn/image/prodimg/promimg/topics/201606/20160602/574619W4最品牌大入口模板640-226.jpg'
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/2.jpg'
                     },
                     {
-                        imgSrc: 'http://img10.gomein.net.cn/image/prodimg/promimg/topics/201606/20160601/574619创维品牌日入口（640x228）.jpg'
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/3.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/4.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/5.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/6.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/7.jpg'
+                    },
+                    {
+                        imgSrc: 'http://geekie.online/static/image/vue-swiper-demo/8.jpg'
                     }],
                 }
             })
